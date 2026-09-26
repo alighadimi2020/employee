@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ario Tjarat | ورود</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="login-page">
+<main class="login-shell">
+  <section class="login-brand">
+    <div class="brand-mark">Ario <span>Tjarat</span></div>
+    <div>
+      <span class="eyebrow">Employee Management System</span>
+      <h1>سامانه سازمانی آریو تجارت</h1>
+      <p>ورود امن به محیط کاری</p>
+    </div>
+  </section>
+  <section class="login-card">
+    <div class="login-heading">
+      <span class="eyebrow">Sign in</span>
+      <h2>ورود به سامانه</h2>
+      <p>نام کاربری و رمز عبور خود را وارد کنید.</p>
+    </div>
+    <form id="loginForm">
+      <label>نام کاربری<input id="username" autocomplete="username" required placeholder="نام کاربری"></label>
+      <label>رمز عبور<input id="password" type="password" autocomplete="current-password" required placeholder="رمز عبور"></label>
+      <button class="primary-btn" type="submit">ورود</button>
+      <div id="loginError" class="form-error"></div>
+    </form>
+  </section>
+</main>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>
