@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حضور و غیاب | Ario Tjarat</title>
+<link rel="stylesheet" href="../css/app.css">
+</head>
+<body><div class="app"><aside class="sidebar" id="sidebar"></aside><main class="main">
+<header class="topbar"><div class="topbar-right"><button class="mobile-menu" id="menuBtn">☰</button><div><span class="eyebrow">Attendance</span><h1>حضور و غیاب</h1><p>وضعیت ورود و خروج کارکنان</p></div></div><div class="date-box"><span id="timeNow"></span><strong id="dateNow"></strong></div></header>
+<section class="hero attendance-manager-hero"><div><span class="eyebrow">Company Attendance</span><h2>ثبت حضور با QR فیزیکی</h2><p>QR ثابت را در محل شرکت نصب کنید. هر کارمند با حساب خودش آن را اسکن می‌کند.</p></div><a class="primary-btn" href="attendance-qr.html">چاپ QR حضور</a></section>
+<section class="panel"><div class="panel-head"><div><span class="eyebrow">Today</span><h2 id="title"></h2></div><span class="muted">ورود → خروج → تکمیل</span></div><div id="list"></div></section>
+</main></div>
+<script src="../js/data.js"></script><script src="../js/auth.js"></script><script src="../js/layout.js"></script>
+<script>
+requireRole("manager");renderLayout("attendance","manager");
+const title=document.getElementById("title"),list=document.getElementById("list");
+title.textContent=faDate();
+const rows=getSystemData().employees.map(employee=>({employee,record:getTodayAttendanceRecord(employee.id)}));
+list.innerHTML=rows.map(({employee,record})=>{
+ const state=!record?"ثبت نشده":record.checkOut?"کامل": "حاضر";
+ const detail=!record?"—":`ورود ${record.checkIn?.time||"—"}${record.checkOut?` · خروج ${record.checkOut.time}`:" · خروج ثبت نشده"}`;
+ return `<div class="attendance-row"><span><b>${escapeHTML(employee.name)}</b></span><span>${state}</span><span>${detail}</span><span class="status ${state!=="ثبت نشده"?"present":""}">${record?"QR":"—"}</span></div>`;
+}).join("");
+</script></body></html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QR حضور | Ario Tjarat</title>
+<link rel="stylesheet" href="../css/app.css">
+<style>
+.qr-sheet{max-width:760px;margin:40px auto;background:#fff;border:1px solid #e7ece9;border-radius:24px;padding:42px;text-align:center;box-shadow:0 18px 50px rgba(20,40,30,.08)}
+.qr-sheet img{width:min(430px,80vw);height:auto;display:block;margin:28px auto}
+.qr-sheet h1{font-size:34px;margin:10px 0}.qr-sheet p{color:#65706b;line-height:2}.qr-url{font-family:monospace;direction:ltr;display:inline-block;margin-top:10px;color:#33413c;word-break:break-all}.qr-toolbar{max-width:760px;margin:24px auto;display:flex;justify-content:space-between;gap:12px}
+@media print{.qr-toolbar{display:none}.qr-sheet{margin:0;box-shadow:none;border:0;max-width:none;height:auto}.qr-sheet img{width:480px}}
+</style>
+</head>
+<body>
+<div class="qr-toolbar"><a class="small-btn" href="attendance.html">بازگشت</a><button class="primary-btn" onclick="window.print()">چاپ برگه حضور</button></div>
+<main class="qr-sheet"><div class="brand-mark">Ario <span>Tjarat</span></div><span class="eyebrow">COMPANY ATTENDANCE</span><h1>ثبت حضور و خروج کارکنان</h1><p>ابتدا وارد حساب کاربری خود شوید، سپس QR را اسکن کنید.</p><img src="../assets/attendance-qr.png" alt="QR ثبت حضور و خروج"><h2>اسکن اول = ورود &nbsp; | &nbsp; اسکن دوم = خروج</h2><p>پس از ثبت ورود و خروج، اسکن‌های بعدی رکورد جدیدی ایجاد نمی‌کنند.</p><span class="qr-url">https://alighadimi2020.github.io/ariotejarat-employees/attendance/checkin.html</span></main>
+</body></html>
