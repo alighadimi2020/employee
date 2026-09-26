@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حضور من | Ario Tjarat</title>
+<link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="app"><aside class="sidebar" id="sidebar"></aside><main class="main">
+<header class="topbar"><div class="topbar-right"><button class="mobile-menu" id="menuBtn">☰</button><div><span class="eyebrow">Attendance</span><h1>حضور و غیاب من</h1><p>ثبت ورود و خروج فقط با QR چاپ‌شده در محل شرکت</p></div></div><div class="date-box"><span id="timeNow"></span><strong id="dateNow"></strong></div></header>
+<section class="grid-2">
+<article class="panel"><div class="panel-head"><div><span class="eyebrow">QR Attendance</span><h2>روش ثبت</h2></div><span class="tag">QR شرکت</span></div>
+<div class="attendance-steps"><div><b>۱</b><span>وارد حساب کاربری خود شوید.</span></div><div><b>۲</b><span>QR چاپ‌شده در محل شرکت را با دوربین گوشی اسکن کنید.</span></div><div><b>۳</b><span>اسکن اول ورود و اسکن دوم خروج همان روز را ثبت می‌کند.</span></div></div>
+<div class="scanner-actions attendance-scan-actions"><button class="primary-btn" id="openScanner" type="button">اسکن QR با دوربین</button><button class="small-btn" id="pickQr" type="button">انتخاب تصویر QR</button><input id="qrFile" type="file" accept="image/*" hidden></div>
+<div id="scanMessage" class="scan-message"></div>
+<div class="notice">QR داخل پنل نمایش داده نمی‌شود. سیستم بعد از هر اسکن وضعیت همان روز را بررسی می‌کند و رکورد تکراری نمی‌سازد.</div>
+</article>
+<article class="panel"><div class="panel-head"><div><span class="eyebrow">Today</span><h2>وضعیت امروز</h2></div></div><div id="todayState"></div></article>
+</section>
+<section class="panel"><div class="panel-head"><div><span class="eyebrow">History</span><h2>سوابق حضور</h2></div></div><div id="attendanceHistory"></div></section>
+</main></div>
+<div class="scanner-modal" id="scannerModal" hidden>
+  <div class="scanner-dialog">
+    <div class="scanner-dialog-head"><div><span class="eyebrow">QR Scanner</span><h2>اسکن کد حضور</h2></div><button class="scanner-close" id="closeScanner" type="button">×</button></div>
+    <div class="scanner-box"><video id="scannerVideo" playsinline muted></video><div class="scanner-frame"></div><div class="scanner-line"></div></div>
+    <p class="scanner-help">دوربین را روبه‌روی QR چاپ‌شده شرکت بگیرید. پس از تشخیص، ثبت حضور به‌صورت خودکار انجام می‌شود.</p>
+    <div class="scanner-actions"><button class="primary-btn" id="stopScanner" type="button">توقف دوربین</button></div>
+    <div id="scannerStatus" class="scan-message"></div>
+  </div>
+</div>
+<script src="../js/data.js"></script><script src="../js/auth.js"></script><script src="../js/layout.js"></script>
+<script>
+const session=requireRole("employee");
+if(session){
+ renderLayout("attendance","employee");
+ const me=getCurrentEmployee(),todayState=document.getElementById("todayState"),history=document.getElementById("attendanceHistory");
+ function render(){
+   const record=getTodayAttendanceRecord(me.id);
+   if(!record) todayState.innerHTML='<div class="empty">حضور امروز هنوز ثبت نشده است.<br>QR چاپ‌شده در محل شرکت را اسکن کنید.</div>';
+   else if(record.checkIn&&!record.checkOut) todayState.innerHTML=`<div class="attendance-success"><strong>ورود ثبت شده — منتظر خروج</strong><span>${escapeHTML(record.checkIn.time)}</span><small>${escapeHTML(record.date)}</small></div>`;
+   else todayState.innerHTML=`<div class="attendance-success"><strong>حضور امروز تکمیل شده</strong><span>ورود ${escapeHTML(record.checkIn.time)} · خروج ${escapeHTML(record.checkOut.time)}</span><small>${escapeHTML(record.date)}</small></div>`;
+   const rows=getSystemData().attendance.filter(x=>x.employeeId===me.id).slice().sort((a,b)=>(b.dateKey||"").localeCompare(a.dateKey||""));
+   history.innerHTML=rows.length?rows.map(x=>`<div class="attendance-row"><span>${escapeHTML(x.date)}</span><span>${x.checkOut?"کامل":"در محل"}</span><span>ورود ${escapeHTML(x.checkIn?.time||"—")}</span><span>${x.checkOut?`خروج ${escapeHTML(x.checkOut.time)}`:"خروج ثبت نشده"}</span></div>`).join(""):'<div class="empty">هنوز سابقه‌ای ثبت نشده است.</div>';
+ }
+ render();
+
+ const modal=document.getElementById("scannerModal");
+ const video=document.getElementById("scannerVideo");
+ const openScanner=document.getElementById("openScanner");
+ const closeScanner=document.getElementById("closeScanner");
+ const stopScanner=document.getElementById("stopScanner");
+ const pickQr=document.getElementById("pickQr");
+ const qrFile=document.getElementById("qrFile");
+ const scannerStatus=document.getElementById("scannerStatus");
+ const scanMessage=document.getElementById("scanMessage");
+ let stream=null,scanTimer=null,detector=null,scanning=false;
+ const target=ATTENDANCE_CHECKIN_URL;
+ function setStatus(message,type=""){scannerStatus.textContent=message;scannerStatus.className=`scan-message ${type}`}
+ function stopCamera(){scanning=false;if(scanTimer)cancelAnimationFrame(scanTimer);scanTimer=null;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+ function closeModal(){stopCamera();modal.hidden=true}
+ async function startScanner(){
+   modal.hidden=false;
+   setStatus("در حال آماده‌سازی دوربین…");
+   if(!navigator.mediaDevices?.getUserMedia){setStatus("مرورگر شما دسترسی دوربین را پشتیبانی نمی‌کند. از انتخاب تصویر QR استفاده کنید.","warning");return}
+   if(!("BarcodeDetector" in window)){setStatus("اسکن مستقیم QR در این مرورگر پشتیبانی نمی‌شود. از انتخاب تصویر QR استفاده کنید.","warning");return}
+   try{
+     detector=new BarcodeDetector({formats:["qr_code"]});
+     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+     video.srcObject=stream;
+     await video.play();
+     scanning=true;
+     setStatus("دوربین فعال است؛ QR را مقابل دوربین قرار دهید.");
+     scanLoop();
+   }catch(err){setStatus(err?.name==="NotAllowedError"?"دسترسی دوربین رد شد. اجازه Camera را برای سایت فعال کنید.":"امکان فعال‌سازی دوربین وجود ندارد. از انتخاب تصویر QR استفاده کنید.","warning")}
+ }
+ async function scanLoop(){
+   if(!scanning||!detector)return;
+   try{
+     const codes=await detector.detect(video);
+     const value=codes?.[0]?.rawValue?.trim();
+     if(value){
+       if(value===target || value.replace(/\/$/,"")===target.replace(/\/$/,"")){stopCamera();modal.hidden=true;location.href=target;return}
+       setStatus("این QR مربوط به ثبت حضور آریو تجارت نیست.","warning");
+     }
+   }catch{}
+   scanTimer=requestAnimationFrame(scanLoop);
+ }
+ async function scanImage(file){
+   if(!file)return;
+   scanMessage.textContent="در حال بررسی تصویر QR…";scanMessage.className="scan-message";
+   if(!("BarcodeDetector" in window)){scanMessage.textContent="این مرورگر اسکن تصویر QR را پشتیبانی نمی‌کند. لطفاً QR را با دوربین گوشی اسکن کنید.";scanMessage.className="scan-message warning";return}
+   try{
+     const image=await createImageBitmap(file);
+     const imageDetector=new BarcodeDetector({formats:["qr_code"]});
+     const codes=await imageDetector.detect(image);
+     image.close?.();
+     const value=codes?.[0]?.rawValue?.trim();
+     if(value && (value===target || value.replace(/\/$/,"")===target.replace(/\/$/,""))){location.href=target;return}
+     scanMessage.textContent=value?"این QR مربوط به ثبت حضور آریو تجارت نیست.":"QR در تصویر پیدا نشد.";scanMessage.className="scan-message warning";
+   }catch{scanMessage.textContent="خواندن تصویر QR ممکن نشد. لطفاً تصویر واضح‌تری انتخاب کنید.";scanMessage.className="scan-message warning"}
+ }
+ openScanner.addEventListener("click",startScanner);
+ closeScanner.addEventListener("click",closeModal);
+ stopScanner.addEventListener("click",()=>{stopCamera();setStatus("دوربین متوقف شد.")});
+ pickQr.addEventListener("click",()=>qrFile.click());
+ qrFile.addEventListener("change",e=>scanImage(e.target.files?.[0]));
+ modal.addEventListener("click",e=>{if(e.target===modal)closeModal()});
+ window.addEventListener("pagehide",stopCamera);
+}
+</script>
+</body>
+</html>

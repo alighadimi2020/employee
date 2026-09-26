@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>گزارش من | Ario Tjarat</title><link rel="stylesheet" href="../css/app.css"></head><body><div class="app"><aside class="sidebar" id="sidebar"></aside><main class="main"><header class="topbar"><div class="topbar-right"><button class="mobile-menu" id="menuBtn">☰</button><div><span class="eyebrow">Reports</span><h1>گزارش‌های من</h1><p>ثبت مستقیم گزارش برای مدیر</p></div></div></header><section class="grid-2"><article class="panel"><div class="panel-head"><div><span class="eyebrow">New report</span><h2>ثبت گزارش جدید</h2></div></div><form id="reportForm" class="report-form"><label>عنوان<input id="reportTitle" required></label><label>شرح فعالیت<textarea id="reportText" required></textarea></label><button class="primary-btn">ثبت گزارش</button><span id="reportMsg" class="muted"></span></form></article><article class="panel"><div class="panel-head"><div><span class="eyebrow">History</span><h2>سوابق من</h2></div></div><div id="reportHistory"></div></article></section></main></div><script src="../js/data.js"></script><script src="../js/auth.js"></script><script src="../js/layout.js"></script><script>
+const session=requireRole("employee");
+if(session){
+ renderLayout("reports","employee");
+ const reportForm=document.getElementById("reportForm"), reportHistory=document.getElementById("reportHistory");
+ function drawReports(){
+   const me=getCurrentEmployee(), d=getSystemData(), items=d.reports.filter(r=>r.employeeId===me.id);
+   reportHistory.innerHTML=items.length?items.map(r=>`<div class="report-row"><div class="employee-avatar">گ</div><div><b>${escapeHTML(r.title)}</b><p>${escapeHTML(r.date)} · ${escapeHTML(r.text)}</p></div><span class="tag">ثبت شده</span></div>`).join(""):'<div class="empty">هنوز گزارشی ثبت نشده است.</div>';
+ }
+ drawReports();
+ reportForm.addEventListener("submit",event=>{
+   event.preventDefault();
+   const me=getCurrentEmployee(), d=getSystemData();
+   const title=document.getElementById("reportTitle").value.trim(), text=document.getElementById("reportText").value.trim();
+   if(!title||!text)return;
+   d.reports.unshift({id:Date.now(),employeeId:me.id,employeeName:me.name,title,text,date:faDate(),createdAt:nowISO()});
+   saveSystemData(d);
+   reportForm.reset();
+   document.getElementById("reportMsg").textContent="گزارش ثبت شد و بلافاصله در پنل مدیریت قرار گرفت.";
+   drawReports();
+ });
+}
+</script></body></html>
