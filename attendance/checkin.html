@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ثبت حضور و خروج | Ario Tjarat</title>
+<link rel="stylesheet" href="../css/app.css">
+</head>
+<body class="checkin-page">
+<main class="checkin-card"><div class="checkin-mark">Ario <span>Tjarat</span></div><div id="checkinState"></div></main>
+<script src="../js/data.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+const state=document.getElementById("checkinState");
+const session=getSession();
+if(!session){
+  state.innerHTML='<div class="checkin-icon warning">!</div><span class="eyebrow">Attendance</span><h1>ورود به حساب لازم است</h1><p>برای ثبت حضور یا خروج، ابتدا در همین مرورگر وارد حساب کاربری خود شوید و سپس QR محل شرکت را اسکن کنید.</p><a class="primary-btn" href="../index.html">ورود به سامانه</a>';
+}else if(session.role!=="employee"){
+  state.innerHTML='<div class="checkin-icon warning">!</div><span class="eyebrow">Attendance</span><h1>ثبت حضور کارکنان</h1><p>این QR فقط برای حساب‌های کارکنان فعال است.</p><a class="primary-btn" href="../manager/index.html">بازگشت به مدیریت</a>';
+}else{
+  const result=processAttendance(session.employeeId),employee=getEmployee(session.employeeId);
+  const titles={"check-in":"ورود ثبت شد","check-out":"خروج ثبت شد",completed:"حضور امروز تکمیل شده است"};
+  const icons={"check-in":"✓","check-out":"✓",completed:"i"};
+  const cls=result.ok?"success":"warning";
+  state.innerHTML=`<div class="checkin-icon ${cls}">${icons[result.action]||"!"}</div><span class="eyebrow">Attendance</span><h1>${titles[result.action]||"ثبت حضور"}</h1><p>${escapeHTML(result.message)}</p><strong class="checkin-name">${escapeHTML(employee.name)}</strong><a class="primary-btn" href="../employee/attendance.html">مشاهده وضعیت حضور</a>`;
+}
+</script>
+</body>
+</html>
